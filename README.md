@@ -1,2 +1,405 @@
-# FatherDayGame
-uploud
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Father's Day: Find Dad's Gift!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        /* General body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #e0f7fa, #b3e5fc); /* Light blue gradient for a cheerful feel */
+            color: #2c3e50;
+            overflow: hidden; /* Prevent scrollbars */
+            text-align: center;
+        }
+
+        /* Game container styling */
+        .game-container {
+            background-color: #ffffff;
+            border-radius: 20px; /* Rounded corners */
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18); /* Softer, larger shadow */
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 95%; /* More responsive width */
+            width: 600px; /* Base width */
+            margin: 20px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        /* Game title */
+        h1 {
+            font-family: 'Pacifico', cursive; /* A more festive font for the title */
+            color: #3f51b5; /* Deeper blue */
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 2.8em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Subtitle / Instructions */
+        p.instructions {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        /* Game grid area */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columns */
+            gap: 15px; /* Spacing between squares */
+            width: 100%; /* Occupy full width of container */
+            max-width: 450px; /* Max width for the grid itself */
+            margin: 20px auto;
+        }
+
+        /* Individual grid square */
+        .grid-square {
+            width: 100%;
+            padding-bottom: 100%; /* Creates a perfect square based on width */
+            position: relative;
+            background-color: #bbdefb; /* Lighter blue for squares */
+            border: 3px solid #64b5f6; /* Blue border */
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em; /* Emoji size */
+            transition: all 0.2s ease-in-out;
+            user-select: none; /* Prevent text selection */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        .grid-square:hover:not(.revealed):not(.found) {
+            background-color: #90caf9; /* Lighter blue on hover */
+            transform: translateY(-3px); /* Slight lift */
+            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+        }
+
+        .grid-square.revealed {
+            background-color: #e0e0e0; /* Grey when clicked (incorrect) */
+            cursor: default;
+        }
+
+        .grid-square.found {
+            background-color: #ffeb3b; /* Yellow for the found gift */
+            border-color: #fdd835;
+            transform: scale(1.05); /* Pop out effect */
+            box-shadow: 0 8px 20px rgba(255, 235, 59, 0.4);
+            cursor: default;
+        }
+
+        /* Info container (attempts) */
+        .info-container {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #4CAF50; /* Green for attempts */
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #e8f5e9; /* Light green background */
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Button styling */
+        .game-button {
+            background: linear-gradient(180deg, #4CAF50, #45a049); /* Green gradient */
+            color: white;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 28px; /* More rounded */
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 15px rgba(76, 175, 80, 0.35);
+        }
+
+        .game-button:hover {
+            background: linear-gradient(180deg, #45a049, #3d8c41);
+            box-shadow: 0 9px 22px rgba(76, 175, 80, 0.45);
+            transform: translateY(-3px);
+        }
+
+        .game-button:active {
+            background: linear-gradient(180deg, #3d8c41, #367c39);
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25);
+        }
+
+        /* Message box styling */
+        .message-box {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Darker overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .message-content {
+            background-color: #ffffff;
+            padding: 40px 50px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 85%;
+            font-size: 1.4em;
+            color: #2c3e50;
+        }
+
+        .message-content h2 {
+            font-family: 'Pacifico', cursive;
+            margin-top: 0;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .message-content h2.win { color: #4CAF50; } /* Green for win */
+        .message-content h2.lose { color: #e74c3c; } /* Red for lose */
+
+        .message-content p {
+            margin-bottom: 30px;
+            line-height: 1.5;
+            font-size: 1.1em;
+        }
+
+        .message-content .close-button {
+            background: linear-gradient(180deg, #3498db, #2980b9); /* Blue gradient */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .message-content .close-button:hover {
+            background: linear-gradient(180deg, #2980b9, #24719c);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2.2em;
+            }
+
+            p.instructions {
+                font-size: 1em;
+            }
+
+            .game-grid {
+                gap: 10px;
+                max-width: 300px;
+            }
+
+            .grid-square {
+                font-size: 2.5em;
+                border-width: 2px;
+                border-radius: 8px;
+            }
+
+            .info-container {
+                font-size: 1em;
+                padding: 8px 12px;
+            }
+
+            .game-button {
+                padding: 10px 22px;
+                font-size: 1em;
+            }
+
+            .message-content {
+                padding: 30px;
+                font-size: 1.2em;
+            }
+
+            .message-content h2 {
+                font-size: 2em;
+            }
+
+            .message-content p {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Happy Father's Day! 👨‍👧‍👦</h1>
+        <p class="instructions">Help us find Dad's special gift! Click on the boxes to reveal what's inside. You have <span id="attemptsDisplay">4</span> attempts!</p>
+        <div id="gameGrid" class="game-grid">
+            <!-- Grid squares will be generated here by JavaScript -->
+        </div>
+        <div id="attemptsInfo" class="info-container">
+            Attempts Left: <span id="currentAttempts">4</span>
+        </div>
+        <button id="startButton" class="game-button">Start Game</button>
+    </div>
+
+    <!-- Message box for game status -->
+    <div id="messageBox" class="message-box">
+        <div class="message-content">
+            <h2 id="messageTitle"></h2>
+            <p id="messageText"></p>
+            <button id="closeMessageButton" class="close-button">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const gameGrid = document.getElementById('gameGrid');
+        const attemptsDisplay = document.getElementById('attemptsDisplay');
+        const currentAttemptsSpan = document.getElementById('currentAttempts');
+        const startButton = document.getElementById('startButton');
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const closeMessageButton = document.getElementById('closeMessageButton');
+
+        let attempts = 4;
+        let giftLocation = -1; // Index of the hidden gift
+        let gameActive = false;
+        const totalSquares = 9; // 3x3 grid
+
+        // Emojis for non-gift items
+        const nonGiftEmojis = ['👔', '☕', '🛠️', '⚽', '📚', '🎶', '⌚', '🧔'];
+        // **NEW**: Prizes for the gift box
+        const prizeEmojis = ['🏆 Trophy', '✨ Sparkles', '⭐ Star', '💎 Diamond', '🎉 Party Popper', '👑 Crown'];
+        let foundPrizeEmoji = ''; // To store the specific prize emoji found
+
+        /**
+         * Initializes the game board by creating grid squares and setting a random gift location.
+         */
+        function initializeGame() {
+            gameGrid.innerHTML = ''; // Clear previous grid
+            attempts = 4; // Reset to 4 attempts on new game
+            attemptsDisplay.textContent = attempts;
+            currentAttemptsSpan.textContent = attempts;
+            gameActive = true;
+            startButton.style.display = 'none'; // Hide start button once game starts
+            messageBox.classList.remove('show'); // Hide message box
+
+            // Randomly determine the gift location
+            giftLocation = Math.floor(Math.random() * totalSquares);
+
+            for (let i = 0; i < totalSquares; i++) {
+                const square = document.createElement('div');
+                square.classList.add('grid-square');
+                square.dataset.index = i; // Store index for identification
+
+                // Add click listener
+                square.addEventListener('click', handleSquareClick);
+                gameGrid.appendChild(square);
+            }
+        }
+
+        /**
+         * Handles a click event on a grid square.
+         * @param {Event} event - The click event object.
+         */
+        function handleSquareClick(event) {
+            if (!gameActive) return; // Do nothing if game is not active
+
+            const clickedSquare = event.target;
+            const index = parseInt(clickedSquare.dataset.index);
+
+            // If this square has already been revealed, do nothing
+            if (clickedSquare.classList.contains('revealed') || clickedSquare.classList.contains('found')) {
+                return;
+            }
+
+            // Check if the clicked square contains the gift
+            if (index === giftLocation) {
+                // Select a random prize and store its emoji
+                const randomPrizeIndex = Math.floor(Math.random() * prizeEmojis.length);
+                foundPrizeEmoji = prizeEmojis[randomPrizeIndex]; // Store the full prize string
+
+                // Display the prize emoji in the square
+                clickedSquare.textContent = foundPrizeEmoji.split(' ')[0]; // Just the emoji part
+                clickedSquare.classList.add('found');
+                gameActive = false; // End game
+                showMessage("You Found It!", `🎉 Congratulations! You found Dad's special Father's Day gift: **${foundPrizeEmoji}**!`, 'win');
+            } else {
+                // Not the gift, reveal a random non-gift emoji
+                const randomEmoji = nonGiftEmojis[Math.floor(Math.random() * nonGiftEmojis.length)];
+                clickedSquare.textContent = randomEmoji;
+                clickedSquare.classList.add('revealed');
+                attempts--;
+                attemptsDisplay.textContent = attempts;
+                currentAttemptsSpan.textContent = attempts;
+
+                if (attempts === 0) {
+                    gameActive = false; // End game
+                    // Reveal the gift location if the game is lost (show the generic gift box emoji)
+                    gameGrid.children[giftLocation].textContent = '🎁';
+                    gameGrid.children[giftLocation].classList.add('found'); // Mark it as found even if lost
+                    showMessage("Game Over!", "😞 Oh no! You ran out of attempts. The gift was here!", 'lose');
+                }
+            }
+        }
+
+        /**
+         * Shows a message box with game status.
+         * @param {string} title - The title for the message box.
+         * @param {string} message - The main message content.
+         * @param {string} type - 'win' or 'lose' to apply appropriate styling.
+         */
+        function showMessage(title, message, type) {
+            messageTitle.textContent = title;
+            messageText.innerHTML = message; // Use innerHTML for emojis/bolding
+            messageTitle.className = ''; // Clear previous classes
+            messageTitle.classList.add(type); // Add win/lose class
+            messageBox.classList.add('show');
+            startButton.style.display = 'block'; // Show start button for replay
+            startButton.textContent = "Play Again"; // Change button text
+        }
+
+        // Event Listeners
+        startButton.addEventListener('click', initializeGame);
+        closeMessageButton.addEventListener('click', () => {
+            messageBox.classList.remove('show');
+            initializeGame(); // Restart game after closing message
+        });
+
+        // Initial setup when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            startButton.textContent = "Start Game";
+            attemptsDisplay.textContent = attempts;
+            currentAttemptsSpan.textContent = attempts;
+            gameActive = false; // Game starts inactive, waiting for user to click Start
+        });
+    </script>
+</body>
+</html>
